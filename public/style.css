@@ -5481,29 +5481,35 @@ a.logo {
   padding-bottom: 0;
 }
 
-.tracking-timeline::before {
-  content: '';
-  position: absolute;
-  top: 23px;
-  bottom: 23px;
-  left: 22px;
-  width: 2px;
-  background: var(--cream-dark);
-  z-index: 1;
-}
+.tracking-timeline::before { display: none; }
 
 .timeline-step {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   position: relative;
   z-index: 2;
   margin-bottom: 35px;
+  opacity: 0.4;
   transition: all 0.3s ease;
 }
 
 .timeline-step:last-child {
   margin-bottom: 0;
 }
+
+.timeline-step:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  top: 46px;
+  bottom: -35px;
+  left: 21px;
+  width: 2px;
+  background: var(--cream-dark);
+  z-index: -1;
+}
+
+.timeline-step.completed { opacity: 0.8; }
+.timeline-step.active { opacity: 1; }
 
 .step-icon {
   width: 46px;
@@ -5729,10 +5735,11 @@ html.dark #result { background: var(--cream-dark) !important; box-shadow: 0 10px
 /* Tracking Timeline Dark Mode */
 html.dark .order-meta { background: #1a1008; border: 1px solid #3a2010; }
 html.dark .meta-value { color: var(--text-dark); }
-html.dark .tracking-timeline::before { background: #3a2010; }
+html.dark .tracking-timeline::before { display: none; }
 html.dark .step-icon { background: var(--cream-dark); border-color: #3a2010; }
 html.dark .step-title { color: var(--text-dark); }
 html.dark .step-desc { color: var(--text-mid); }
 html.dark .timeline-step.completed .step-icon { background: #1a1008; border-color: var(--gold); }
 html.dark .timeline-step.active .step-icon { background: var(--gold); border-color: var(--gold); }
 html.dark .cancelled-alert { background: rgba(153, 27, 27, 0.2); color: #fca5a5; border-color: rgba(153, 27, 27, 0.4); }
+
