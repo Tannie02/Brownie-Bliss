@@ -1,5 +1,3 @@
-script.js
-
 // --- CONFIG ---
 const API_BASE = '/api';
 
@@ -30,6 +28,7 @@ let products = [];
 let bdayCakes = {};
 let selectedFlavor = 'Red Velvet';
 let selectedWeight = '1.0';
+let selectedPriceFilter = 'all';
 const BIRTHDAY_BASE_PRICES = {
     '0.5': 450,
     '1.0': 850,
@@ -37,7 +36,6 @@ const BIRTHDAY_BASE_PRICES = {
     '2.0': 1600
 };
 
-// buildCatalogFromList(null);
 const DEFAULT_PRODUCTS = [
     { id: 1, name: "Velvet Dream Cake", category: "cakes", price: 850, img: "https://theobroma.in/cdn/shop/files/redvelvet-theo.jpg?v=1701321860" },
     { id: 2, name: "Dutch Truffle Delight", category: "cakes", price: 950, img: "https://tse3.mm.bing.net/th/id/OIP.6wMpc_E6xsHLl3zT2ItBSQHaHa?pid=Api&P=0&h=180" },
@@ -48,6 +46,7 @@ const DEFAULT_BDAY_CAKES = {
     "Red Velvet": { price: 850, img: "https://theobroma.in/cdn/shop/files/redvelvet-theo.jpg?v=1701321860" },
     "Dutch Truffle": { price: 950, img: "https://tse2.mm.bing.net/th/id/OIP.RFIPPxLpOU7C0ryaVA5hMwHaHa?pid=Api&P=0&h=180" }
 };
+
 let favourites = loadFavourites();
 buildCatalogFromList(null);
 
@@ -64,8 +63,6 @@ function useFallbackProducts() {
 }
 
 const FAVOURITES_KEY = 'brownie_bliss_favourites';
-
-let favourites = loadFavourites();
 
 function buildCatalogFromList(list) {
     if (list && Array.isArray(list) && list.length) {
@@ -122,80 +119,19 @@ async function loadProducts() {
     }
 }
 
-function buildCatalogFromList(list) {
-    if (list && Array.isArray(list) && list.length) {
-        products = list.filter(p => p.type === 'standard').map(p => ({
-
-    if (document.getElementById('productsGrid')) filterProducts('all');
-    if (document.getElementById('cakePrice')) calculateBdayPrice();
-}
-
-function useFallbackProducts() {
-    products = DEFAULT_PRODUCTS;
-    bdayCakes = DEFAULT_BDAY_CAKES;
-}
-
 // --- FAVOURITES ---
 function loadFavourites() {
     try {
         return JSON.parse(localStorage.getItem(FAVOURITES_KEY)) || { bakeries: [], dishes: [] };
     } catch {
         return { bakeries: [], dishes: [] };
-        if (data.success && Array.isArray(data.products) && data.products.length) {
-        
-          products = data.products.filter(p => p.type === 'standard').map(p => ({
-            id: p.id_ref,
-            name: p.name,
-            category: p.category,
-            price: p.price,
-            emoji: p.emoji,
-            img: p.img,
-            description: p.description || ''
-        }));
-
-        const bd = list.filter(p => p.type === 'birthday');
-        bdayCakes = {};
-        bd.forEach(p => {
-            bdayCakes[p.id_ref] = {
-                price: p.price,
-                emoji: p.emoji,
-                img: p.img
-            };
-        });
-    } else {
-            const bd = data.products.filter(p => p.type === 'birthday');
-
-            bd.forEach(p => {
-                bdayCakes[p.id_ref] = {
-                    price: p.price,
-                    emoji: p.emoji,
-                    img: p.img
-                };
-            });
-
-        } else {
-            useFallbackProducts();
-        }
-
-    } catch (e) {
-        console.error('Error loading products from database:', e);
-        useFallbackProducts();
     }
+}
 
 function saveFavourites() {
     localStorage.setItem(FAVOURITES_KEY, JSON.stringify(favourites));
 }
 
-// --- CART ---
-    // Render UI
-    if (document.getElementById('productsGrid')) {
-        filterProducts('all');
-    }
-
-    if (document.getElementById('cakePrice')) {
-        calculateBdayPrice();
-    }
-}
 // --- CART STATE ---
 let cart = JSON.parse(localStorage.getItem('brownie_bliss_cart') || '[]');
 let checkoutState = { name: '', phone: '', address: '', city: '', pincode: '', verified: false, currentStep: 1 };
@@ -210,10 +146,9 @@ function updateCartUI() {
     if (!cartContainer) return;
 
     if (cart.length === 0) {
-        cartContainer.innerHTML = "Cart empty 🍫";
-        return;
         cartContainer.innerHTML = '<div class="cart-empty"><span class="cart-empty-icon">🍫</span>Your cart is empty</div>';
-         if (cartFooter) cartFooter.style.display = 'none';
+        const cartFooter = document.getElementById('cartFooter');
+        if (cartFooter) cartFooter.style.display = 'none';
     } else {
         cartContainer.innerHTML = cart.map((item, index) => {
             const c = item.customizations;
@@ -241,18 +176,12 @@ function updateCartUI() {
                 <button class="cart-item-remove" onclick="removeFromCart(${index})">✕</button>
             </div>
         `}).join('');
+        const cartFooter = document.getElementById('cartFooter');
         if (cartFooter) cartFooter.style.display = 'block';
+        const cartTotal = document.getElementById('cartTotal');
         const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
         if (cartTotal) cartTotal.textContent = `₹${total.toLocaleString('en-IN')}`;
     }
-
-    cartContainer.innerHTML = cart.map((item, index) => `
-        <div>
-            ${item.name} x ${item.qty}
-            <button onclick="changeQty(${index},1)">+</button>
-            <button onclick="changeQty(${index},-1)">-</button>
-        </div>
-    `).join('');
 }
 
 // FIXED ADD TO CART
@@ -275,24 +204,6 @@ function changeQty(index, delta) {
     updateCartUI();
 }
 
-// --- PRODUCT FILTER (FIXED BUTTON BUG) ---
-function filterProducts(category) {
-    const grid = document.getElementById('productsGrid');
-    if (!grid) return;
-
-    const filtered = category === 'all'
-        ? products
-        : products.filter(p => p.category === category);
-
-    grid.innerHTML = filtered.map(p => `
-        <div class="product-card">
-            <img src="${p.img}" />
-            <h3>${p.name}</h3>
-            <p>₹${p.price}</p>
-
-            <button onclick='addToCart(${JSON.stringify(p)})'>
-                Add to Cart
-            </button>
 function removeFromCart(index) {
     cart.splice(index, 1);
     saveCart();
@@ -309,7 +220,66 @@ function closeCart() {
     document.getElementById('cartOverlay')?.classList.remove('open');
 }
 
-// --- CHECKOUT FLOW ---
+// --- PRODUCT FILTER ---
+
+function updatePriceFilter() {
+    selectedPriceFilter = document.getElementById('priceFilter').value;
+    const activeTab = document.querySelector('.filter-tab.active');
+    const activeCategory = activeTab ? activeTab.textContent.toLowerCase() : 'all';
+    filterProducts(activeCategory);
+}
+
+function filterProducts(category, btn) {
+    const grid = document.getElementById('productsGrid');
+    if (!grid) return;
+
+    if (btn) {
+        btn.parentElement.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+
+    let filtered = category === 'all'
+        ? products
+        : products.filter(p => p.category === category);
+
+    // PRICE FILTER
+    if (selectedPriceFilter === 'under200') {
+        filtered = filtered.filter(p => p.price < 200);
+    } else if (selectedPriceFilter === '200to500') {
+        filtered = filtered.filter(p => p.price >= 200 && p.price <= 500);
+    } else if (selectedPriceFilter === 'above500') {
+        filtered = filtered.filter(p => p.price > 500);
+    }
+
+    grid.innerHTML = filtered.map(p => `
+        <div class="product-card" onclick='openCustomizeModal(${JSON.stringify(p).replace(/'/g, "&#39;")})' style="cursor:pointer">
+            <div class="product-img-wrap">
+                <img src="${p.img}" alt="${p.name}">
+                <button class="favorite-btn ${isFavourite('dishes', p.id) ? 'active' : ''}"
+                    type="button"
+                    data-fav-type="dishes"
+                    data-fav-id="${p.id}"
+                    aria-label="Toggle ${p.name} favourite"
+                    aria-pressed="${isFavourite('dishes', p.id) ? 'true' : 'false'}"
+                    title="${isFavourite('dishes', p.id) ? 'Remove from favourites' : 'Add to favourites'}"
+                    onclick='toggleFavourite("dishes", ${JSON.stringify(p)})'>
+                    ${isFavourite('dishes', p.id) ? '&hearts;' : '&#9825;'}
+                </button>
+                ${p.id < 4 ? '<div class="bestseller-badge">⭐ Bestseller</div>' : ''}
+            </div>
+            <div class="product-info">
+                <div class="product-category">${p.category}</div>
+                <div class="product-name">${p.name}</div>
+                ${p.description ? `<div class="product-desc">${p.description}</div>` : ''}
+                <div class="product-price">₹${p.price}</div>
+                <button class="add-to-cart">
+                    Customize & Add
+                </button>
+            </div>
+        </div>
+    `).join('');
+}
+
 // --- CHECKOUT FLOW ---
 function injectCheckoutModal() {
     if (document.getElementById('checkoutOverlay')) return;
@@ -460,30 +430,29 @@ async function sendOTP() {
     checkoutState.name = name;
     checkoutState.phone = phone;
 
-    // Bypassing OTP
     const btn = document.querySelector('#checkStep1 .hero-cta');
-if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending...'; }
 
-try {
-  const res = await fetch(`${API_BASE}/send-otp`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ phone })
-  });
-  const data = await res.json();
+    try {
+        const res = await fetch(`${API_BASE}/send-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ phone })
+        });
+        const data = await res.json();
 
-  if (data.success) {
-    document.getElementById('otpPhoneDisp').textContent = '+91 ' + phone;
-    showCheckoutStep(2);
-    showToast('OTP sent! Check your phone.');
-  } else {
-    showToast(data.message || 'Failed to send OTP. Try again.');
-  }
-} catch (e) {
-  showToast('Server error. Please try again.');
-} finally {
-  if (btn) { btn.disabled = false; btn.textContent = 'Send Verification OTP →'; }
- }
+        if (data.success) {
+            document.getElementById('otpPhoneDisp').textContent = '+91 ' + phone;
+            showCheckoutStep(2);
+            showToast('OTP sent! Check your phone.');
+        } else {
+            showToast(data.message || 'Failed to send OTP. Try again.');
+        }
+    } catch (e) {
+        showToast('Server error. Please try again.');
+    } finally {
+        if (btn) { btn.disabled = false; btn.textContent = 'Send Verification OTP →'; }
+    }
 }
 
 function otpNext(input, idx) {
@@ -595,20 +564,6 @@ function sendWhatsAppFinal(orderId) {
     const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
     const itemLines = cart.map(i => {
         let line = `• ${i.name} × ${i.qty} = ₹${(i.price * i.qty).toLocaleString()}`;
-function sendWhatsAppFinal(orderId, itemsSnap, orderTotal) {
-
-    const lines = Array.isArray(itemsSnap) && itemsSnap.length
-        ? itemsSnap
-        : cart;
-
-    const total = typeof orderTotal === 'number' && Number.isFinite(orderTotal)
-        ? orderTotal
-        : lines.reduce((s, i) => s + Number(i.price) * Number(i.qty), 0);
-    const itemLines = lines.map(i => {
-        let line = `• ${i.name} × ${i.qty} = ₹${(Number(i.price) * Number(i.qty)).toLocaleString('en-IN')}`;
-
-    const itemLines = lines.map(i => {
-        let line = `• ${i.name} × ${i.qty} = ₹${(Number(i.price) * Number(i.qty)).toLocaleString('en-IN')}`;
         if (i.customizations) {
             const c = i.customizations;
             const details = [];
@@ -631,7 +586,6 @@ function sendWhatsAppFinal(orderId, itemsSnap, orderTotal) {
         }
 
         return line;
-
     }).join('\n');
 
     const message =
@@ -645,94 +599,19 @@ function sendWhatsAppFinal(orderId, itemsSnap, orderTotal) {
         `_Your order has been recorded. Please share the payment receipt for confirmation!_ ✨`;
 
     const encodedMsg = encodeURIComponent(message);
-
     const fullPhone = `918072596340`;
-
     const waUrl = `https://wa.me/${fullPhone}?text=${encodedMsg}`;
 
     window.open(waUrl, '_blank');
 }
+
 // Redirect old button
 function sendToWhatsApp() {
     openCheckout();
 }
 
-let selectedPriceFilter = 'all';
-function updatePriceFilter() {
-    selectedPriceFilter =
-        document.getElementById('priceFilter').value;
-
-    const activeTab =
-        document.querySelector('.filter-tab.active');
-
-    const activeCategory =
-        activeTab
-            ? activeTab.textContent.toLowerCase()
-            : 'all';
-
-    filterProducts(activeCategory);
-}
-// --- PRODUCT FILTERING ---
-function filterProducts(category, btn) {
-    const grid = document.getElementById('productsGrid');
-    if (!grid) return;
-
-    if (btn) {
-        btn.parentElement.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-    }
-
-    let filtered = category === 'all'
-    ? products
-    : products.filter(p => p.category === category);
-
-// PRICE FILTER
-if (selectedPriceFilter === 'under200') {
-    filtered = filtered.filter(p => p.price < 200);
-}
-else if (selectedPriceFilter === '200to500') {
-    filtered = filtered.filter(
-        p => p.price >= 200 && p.price <= 500
-    );
-}
-else if (selectedPriceFilter === 'above500') {
-    filtered = filtered.filter(p => p.price > 500);
-}
-
-    grid.innerHTML = filtered.map(p => `
-        <div class="product-card" onclick='openCustomizeModal(${JSON.stringify(p).replace(/'/g, "&#39;")})' style="cursor:pointer">
-            <div class="product-img-wrap">
-                <img src="${p.img}" alt="${p.name}">
-                <button class="favorite-btn ${isFavourite('dishes', p.id) ? 'active' : ''}"
-                    type="button"
-                    data-fav-type="dishes"
-                    data-fav-id="${p.id}"
-                    aria-label="Toggle ${p.name} favourite"
-                    aria-pressed="${isFavourite('dishes', p.id) ? 'true' : 'false'}"
-                    title="${isFavourite('dishes', p.id) ? 'Remove from favourites' : 'Add to favourites'}"
-                    onclick='toggleFavourite("dishes", ${JSON.stringify(p)})'>
-                    ${isFavourite('dishes', p.id) ? '&hearts;' : '&#9825;'}
-                </button>
-                ${p.id < 4 ? '<div class="bestseller-badge">⭐ Bestseller</div>' : ''}
-            </div>
-            <div class="product-info">
-                <div class="product-category">${p.category}</div>
-                <div class="product-name">${p.name}</div>
-                ${p.description ? `<div class="product-desc">${p.description}</div>` : ''}
-                <div class="product-price">₹${p.price}</div>
-                <button class="add-to-cart">
-                    Customize & Add
-                </button>
-            </div>
-        </div>
-    `).join('');
-}
-
 // --- BIRTHDAY CAKE BUILDER ---
-// bdayCakes object is now populated dynamically via loadProducts()
-
 function updateBirthdayCake(flavor) {
-
     if (!bdayCakes[flavor]) {
         console.error("Cake flavor not found:", flavor);
         return;
@@ -743,10 +622,6 @@ function updateBirthdayCake(flavor) {
     // Update image
     const cakeImg = document.getElementById('birthdayCakeImg');
     if (cakeImg && bdayCakes[flavor]) {
-        cakeImg.src = bdayCakes[flavor].img;
-    }
-
-    if (cakeImg) {
         cakeImg.src = bdayCakes[flavor].img;
     }
 
@@ -761,26 +636,15 @@ function updateBirthdayCake(flavor) {
 
     calculateBdayPrice();
 }
-function setCakeWeight(weight) {
-// --- BIRTHDAY CAKE ---
-let selectedFlavor = "Red Velvet";
-let selectedWeight = "1.0";
-
-const BIRTHDAY_BASE_PRICES = {
-    "0.5": 450,
-    "1.0": 850,
-    "1.5": 1250,
-    "2.0": 1600
-};
 
 function setCakeWeight(weight, event) {
     selectedWeight = weight;
 
-    document.querySelectorAll('.weight-btn')
-        .forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.weight-btn').forEach(b => b.classList.remove('active'));
 
-    if (event?.target)
+    if (event?.target) {
         event.target.classList.add('active');
+    }
 
     calculateBdayPrice();
 }
@@ -827,9 +691,7 @@ function updateBirthdayFavouriteButton() {
 
     btn.innerHTML = active ? '&hearts;' : '&#9825;';
 }
-// --- FIXED WHATSAPP (ONLY ONE VERSION) ---
-function sendWhatsAppFinal(orderId) {
-    const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+
 function toggleBirthdayFavourite() {
     toggleFavourite('dishes', getBirthdayFavouriteItem());
 }
@@ -878,8 +740,6 @@ function addBirthdayToCart() {
     showToast('🎂 Birthday cake added to cart!');
     openCart();
     if (msgInput) msgInput.value = '';
-
-    openCart();
 }
 
 function renderFavouritesPage() {
@@ -936,34 +796,106 @@ function renderFavouritesPage() {
             </div>
         `).join('');
     }
-
-    const items = cart.map(i =>
-        `• ${i.name} × ${i.qty} = ₹${i.price * i.qty}`
-    ).join('\n');
-
-    const msg =
-        `🍫 Order ID: ${orderId}\n\n` +
-        `${items}\n\nTotal: ₹${total}`;
-
-    const url = `https://wa.me/918072596340?text=${encodeURIComponent(msg)}`;
-    window.open(url, "_blank");
 }
 
 // --- TOAST ---
 function showToast(msg) {
     const t = document.getElementById('toast');
     if (!t) return;
-    t.textContent = msg;
+    t.innerHTML = msg;
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// --- FAVOURITES HELPERS ---
+function isFavourite(type, id) {
+    if (type === 'bakeries') {
+        return favourites.bakeries.some(b => b.id === id);
+    } else if (type === 'dishes') {
+        return favourites.dishes.some(d => d.id === id);
+    }
+    return false;
+}
+
+function toggleFavourite(type, item) {
+    if (type === 'bakeries') {
+        const index = favourites.bakeries.findIndex(b => b.id === item.id);
+        if (index > -1) {
+            favourites.bakeries.splice(index, 1);
+        } else {
+            favourites.bakeries.push(item);
+        }
+    } else if (type === 'dishes') {
+        const index = favourites.dishes.findIndex(d => d.id === item.id);
+        if (index > -1) {
+            favourites.dishes.splice(index, 1);
+        } else {
+            favourites.dishes.push(item);
+        }
+    }
+    saveFavourites();
+    updateCartUI();
+    renderFavouritesPage();
+}
+
+function updateFavouriteButtons(type, id) {
+    const active = isFavourite(type, id);
+    document.querySelectorAll(`[data-fav-type="${type}"][data-fav-id="${id}"]`).forEach(btn => {
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+}
+
+function updateFavouritesCount() {
+    const totalFavs = favourites.bakeries.length + favourites.dishes.length;
+    const badge = document.getElementById('favCount');
+    if (badge) {
+        badge.textContent = totalFavs;
+        badge.style.display = totalFavs > 0 ? 'block' : 'none';
+    }
+}
+
+// --- TRACK ORDER LOGIC ---
+async function trackOrder(id) {
+    const orderIdInput = document.getElementById('orderIdInput');
+    if (!id && orderIdInput) {
+        id = orderIdInput.value.trim();
+    }
+
+    if (!id) {
+        showToast('Enter an order ID to track.');
+        return;
+    }
+
+    try {
+        const res = await fetch(`${API_BASE}/orders/${id}`);
+        const data = await res.json();
+
+        if (data.success) {
+            const order = data.order;
+            const trackingEl = document.getElementById('trackingDetails');
+            if (trackingEl) {
+                trackingEl.innerHTML = `
+                    <div class="track-result">
+                        <h3>Order #${order.id}</h3>
+                        <p>Status: <strong>${order.status}</strong></p>
+                        <p>Total: ₹${order.total}</p>
+                    </div>
+                `;
+            }
+        } else {
+            showToast('Order not found.');
+        }
+    } catch (e) {
+        showToast('Failed to track order.');
+    }
 }
 
 // --- INIT ---
 document.addEventListener('DOMContentLoaded', () => {
     applyTheme(localStorage.getItem('bb_theme') || 'light');
     updateCartUI();
-    loadProducts(); // Load and then automatically re-render main grid/birthday block
-    updateFavouriteButtons('bakeries', BROWNIE_BLISS_BAKERY.id);
+    loadProducts();
     updateFavouritesCount();
     renderFavouritesPage();
 
@@ -975,132 +907,124 @@ document.addEventListener('DOMContentLoaded', () => {
         input.value = idParam;
         trackOrder(idParam);
     }
-    loadProducts();
 });
-// Show/hide button on scroll
+
+// Show/hide scroll to top button
 window.addEventListener("scroll", function () {
     const btn = document.getElementById("scrollTopBtn");
-
-// --- TRACK ORDER LOGIC ---
-async function trackOrder(id) {
-    const orderIdInput = document.getElementById('orderIdInput');
-    const trackError = document.getElementById('trackError');
-    const result = document.getElementById('result');
-
-    if (!orderIdInput) return;
-
-    // Reset previous state
-    if (trackError) {
-        trackError.classList.remove('show');
-        trackError.textContent = '';
-    }
-
-    if (result) {
-        result.style.display = 'none';
-    }
-
-    const orderId = id || orderIdInput.value.trim();
-
-    // Empty input validation
-    if (!orderId) {
-        if (trackError) {
-            trackError.textContent = 'Please enter an Order ID';
-            trackError.classList.add('show');
-        }
-        return;
-    }
-
-    try {
-        const res = await fetch(`${API_BASE}/orders/${orderId}`);
-        const data = await res.json();
-
-        // Successful order fetch
-        if (data.success || data.order) {
-            renderOrderDetails(data.order || data);
-
-            if (result) {
-                result.style.display = 'block';
-            }
-        }
-        // Invalid order
-        else {
-            if (trackError) {
-                trackError.textContent =
-                    data.error || 'Order not found';
-                trackError.classList.add('show');
-            }
-        }
-
-    } catch (e) {
-        console.error(e);
-
-        if (trackError) {
-            trackError.textContent =
-                'Error fetching order. Make sure server is running!';
-            trackError.classList.add('show');
-        }
-    }
-}
-
-function renderOrderDetails(order) {
-    const resOrderId = document.getElementById('resOrderId');
-    if (!resOrderId) return; // Not on track page
-
-    resOrderId.textContent = order.id || order.order_id;
-
-    const statusLower = (order.status || 'pending').toLowerCase();
-    
-    // Update top total amount
-    const resTotalTop = document.getElementById('resTotalTop');
-    if (resTotalTop) resTotalTop.textContent = order.total;
-
-    // Timeline Progression Logic
-    const timeline = document.getElementById('trackingTimeline');
-    const cancelledAlert = document.getElementById('cancelledAlert');
-    
-    if (timeline && cancelledAlert) {
-        if (statusLower === 'cancelled') {
-            timeline.style.display = 'none';
-            cancelledAlert.style.display = 'block';
-        } else {
-            timeline.style.display = 'block';
-            cancelledAlert.style.display = 'none';
-            
-            // Reset all steps
-            const steps = ['pending', 'confirmed', 'preparing', 'delivered'];
-            steps.forEach(s => {
-                const el = document.getElementById(`step-${s}`);
-                if (el) el.classList.remove('active', 'completed');
-            });
-            
-            // Determine current step index
-            const currentIndex = steps.indexOf(statusLower) > -1 ? steps.indexOf(statusLower) : 0;
-            
-            // Apply classes
-            steps.forEach((s, i) => {
-                const el = document.getElementById(`step-${s}`);
-                if (!el) return;
-                
-                if (i < currentIndex) {
-                    el.classList.add('completed');
-                } else if (i === currentIndex) {
-                    el.classList.add('active');
-                }
-            });
-        }
-    }
-
-    if (order.created_at) {
-        document.getElementById('resDate').textContent = new Date(order.created_at).toLocaleString();
-    } else {
-        btn.style.display = "none";
+    if (btn) {
+        btn.style.display = window.scrollY > 300 ? 'block' : 'none';
     }
 });
 
-// Scroll to top function
-function scrollToTop() {
-    window.scrollTo({
-        top: 0,
-        behavior: "smooth"
+const slider = document.querySelector('.birthday-slider');
+
+const dots = document.querySelectorAll('.slider-dot');
+
+if (slider) {
+    let isDragging = false;
+    let startX;
+    let scrollLeft;
+
+    slider.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        slider.classList.add('dragging');
+        startX = e.pageX - slider.offsetLeft;
+        scrollLeft = slider.scrollLeft;
+    });
+
+    slider.addEventListener('mouseleave', () => {
+        isDragging = false;
+        slider.classList.remove('dragging');
+    });
+
+    slider.addEventListener('mouseup', () => {
+        isDragging = false;
+        slider.classList.remove('dragging');
+    });
+
+    slider.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+
+        e.preventDefault();
+
+        const x = e.pageX - slider.offsetLeft;
+        const walk = (x - startX) * 2;
+
+        slider.scrollLeft = scrollLeft - walk;
     });
 }
+document.addEventListener('DOMContentLoaded', () => {
+    const slider = document.querySelector('.birthday-slider');
+
+    if (!slider) return;
+
+    const slides = slider.querySelectorAll('.bday-slide');
+    let currentIndex = 0;
+    let autoSlide;
+
+    function goToSlide(index) {
+        slider.scrollTo({
+            left: slides[index].offsetLeft,
+            behavior: 'smooth'
+        });
+
+        dots.forEach(dot => dot.classList.remove('active'));
+        dots[index].classList.add('active');
+
+        currentIndex = index;
+    }
+
+    dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+            goToSlide(index);
+        });
+    });
+
+    function startAutoSlide() {
+        autoSlide = setInterval(() => {
+            currentIndex = (currentIndex + 1) % slides.length;
+            goToSlide(currentIndex);
+        }, 4000); // change every 4 seconds
+    }
+
+    function stopAutoSlide() {
+        clearInterval(autoSlide);
+    }
+
+    // Mouse drag support
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+
+    slider.addEventListener('mousedown', (e) => {
+        isDown = true;
+        stopAutoSlide();
+        startX = e.pageX - slider.offsetLeft;
+        scrollLeft = slider.scrollLeft;
+    });
+
+    slider.addEventListener('mouseleave', () => isDown = false);
+    slider.addEventListener('mouseup', () => {
+        isDown = false;
+        startAutoSlide();
+    });
+
+    slider.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+
+        e.preventDefault();
+
+        const x = e.pageX - slider.offsetLeft;
+        const walk = (x - startX) * 2;
+
+        slider.scrollLeft = scrollLeft - walk;
+    });
+
+    // Touch support
+    slider.addEventListener('touchstart', stopAutoSlide);
+    slider.addEventListener('touchend', startAutoSlide);
+
+    startAutoSlide();
+});
+

@@ -8907,6 +8907,8 @@ a.logo {
  .some-class {
   color: var(--brown-dark) !important;
 }
+}
+
 
 html.dark {
   --cream: #1a1008;
@@ -9842,8 +9844,39 @@ html.dark .topping-price {
   }
 }
 
+.birthday-slider {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  scrollbar-width: none;     
+  -ms-overflow-style: none; 
+}
+
 .birthday-slider::-webkit-scrollbar {
-  display: none;
+    display: none; 
+}
+  
+.birthday-slider {
+  cursor: grab;
+}
+
+.birthday-slider.dragging {
+  cursor: grabbing;
+}
+
+html,
+body {
+  overflow-x: hidden;
+} 
+
+.bday-slide {
+  min-width: 100%;
+  flex-shrink: 0;
+  scroll-snap-align: start;
+}
+
 .price-filter {
   display: flex;
   align-items: center;
@@ -9932,8 +9965,7 @@ html.dark .topping-price {
   box-shadow:
     0 0 0 4px rgba(181, 131, 102, 0.18);
 }
-}
-}
+
 .custom-price-filter {
   appearance: none !important;
   background-color: #fff4ec !important;
@@ -9968,7 +10000,6 @@ background-position: right 16px center;
   font-family: 'Playfair Display', serif !important;
   color: #5c372c !important;
 }
-}
 #scrollTopBtn {
     position: fixed;
     bottom: 20px;
@@ -9996,4 +10027,19 @@ background-position: right 16px center;
 #scrollTopBtn:hover {
     background-color: #8b5a3c;
     transform: scale(1.1);
+}
+
+.slider-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--cream-dark);
+  border: 1px solid var(--gold);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.slider-dot.active {
+  background: var(--gold);
+  transform: scale(1.3);
 }
